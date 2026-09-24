@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../services/firestore_service.dart';
+import '../../utils/colors.dart';
 import 'canteen_menu.dart';
+import 'cart_screen.dart';
+import 'orders_screen.dart';
+import 'profile_screen.dart';
 
 class StudentHome extends StatefulWidget {
   const StudentHome({super.key});
@@ -9,92 +14,45 @@ class StudentHome extends StatefulWidget {
 }
 
 class _StudentHomeState extends State<StudentHome> {
-  int selectedIndex = 0;
+  final FirestoreService _service = FirestoreService();
+  int _selectedIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
 
-  final Color red = const Color(0xFFB3261E);
-  final Color cream = const Color(0xFFF8F3EA);
-  final Color dark = const Color(0xFF242424);
+  final Color red = AppColors.primary;
+  final Color cream = AppColors.background;
+  final Color dark = AppColors.textPrimary;
 
-  final List<Map<String, dynamic>> canteens = [
-    {
-      'name': 'Rec Cafe',
-      'image':
-          'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800',
-    },
-    {
-      'name': 'Hut Cafe',
-      'image':
-          'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?w=800',
-    },
-    {
-      'name': 'Yippe',
-      'image':
-          'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800',
-    },
-    {
-      'name': 'Hotspot',
-      'image':
-          'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800',
-    },
-    {
-      'name': 'Wokon',
-      'image':
-          'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800',
-    },
-    {
-      'name': 'Cafe Coffee Day',
-      'image':
-          'https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=800',
-    },
-    {
-      'name': '6Sense',
-      'image':
-          'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _service.addListener(_onServiceUpdate);
+  }
 
-  final List<Map<String, dynamic>> foods = [
-    {
-      'name': 'Chicken Burger',
-      'canteen': 'Rec Cafe',
-      'price': '₹129',
-      'rating': '4.8',
-      'image':
-          'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=900',
-    },
-    {
-      'name': 'Paneer Pizza',
-      'canteen': 'Hotspot',
-      'price': '₹149',
-      'rating': '4.7',
-      'image':
-          'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=900',
-    },
-    {
-      'name': 'Veg Noodles',
-      'canteen': 'Wokon',
-      'price': '₹99',
-      'rating': '4.6',
-      'image':
-          'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=900',
-    },
-    {
-      'name': 'Cold Coffee',
-      'canteen': 'Cafe Coffee Day',
-      'price': '₹89',
-      'rating': '4.5',
-      'image':
-          'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=900',
-    },
-  ];
+  @override
+  void dispose() {
+    _service.removeListener(_onServiceUpdate);
+    _searchController.dispose();
+    super.dispose();
+  }
 
-  void openCanteen(String canteenName) {
+  void _onServiceUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  void _openCanteen(String canteenName) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CanteenMenu(
-          canteenName: canteenName,
-        ),
+        builder: (context) => CanteenMenu(canteenName: canteenName),
+      ),
+    );
+  }
+
+  void _openCart() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CartScreen(),
       ),
     );
   }
@@ -105,20 +63,31 @@ class _StudentHomeState extends State<StudentHome> {
       backgroundColor: cream,
       body: SafeArea(
         child: IndexedStack(
-          index: selectedIndex,
+          index: _selectedIndex,
           children: [
             _buildHome(),
-            _buildOrdersPlaceholder(),
-            _buildProfilePlaceholder(),
+            const OrdersScreen(showBackButton: false),
+            const ProfileScreen(),
           ],
         ),
       ),
       bottomNavigationBar: _buildBottomNavigation(),
+      floatingActionButton: _selectedIndex == 0 && _service.cartCount > 0
+          ? FloatingActionButton.extended(
+              onPressed: _openCart,
+              backgroundColor: red,
+              icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white),
+              label: Text(
+                'Cart (${_service.cartCount}) • ₹${_service.cartTotal.toStringAsFixed(0)}',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            )
+          : null,
     );
   }
 
   // ------------------------------------------------------------
-  // HOME
+  // HOME SCREEN
   // ------------------------------------------------------------
 
   Widget _buildHome() {
@@ -129,49 +98,34 @@ class _StudentHomeState extends State<StudentHome> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-
           const SizedBox(height: 24),
-
           _buildSearchBar(),
-
-          const SizedBox(height: 28),
-
+          const SizedBox(height: 26),
           _buildOfferBanner(),
-
-          const SizedBox(height: 32),
-
+          const SizedBox(height: 30),
           _sectionTitle(
             'Choose your canteen',
-            'Order from your favourite spot',
+            'Skip the line • Live queue wait times',
+            onSeeAll: () => _openCanteen("Rec Cafe"),
           ),
-
           const SizedBox(height: 16),
-
           _buildCanteens(),
-
-          const SizedBox(height: 34),
-
+          const SizedBox(height: 32),
           _sectionTitle(
             'Featured today',
-            'Popular picks around campus',
+            'Fast preparation • Popular campus picks',
+            onSeeAll: () => _openCanteen("Rec Cafe"),
           ),
-
           const SizedBox(height: 18),
-
           _buildFoodList(),
-
-          const SizedBox(height: 34),
-
+          const SizedBox(height: 32),
           _sectionTitle(
             'Near to your heart',
-            'Your frequently ordered favourites',
+            'Your frequently ordered favourite',
           ),
-
           const SizedBox(height: 18),
-
           _buildFavouriteCard(),
-
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
         ],
       ),
     );
@@ -190,20 +144,40 @@ class _StudentHomeState extends State<StudentHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Good afternoon 👋',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Good day 👋',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        "REC CAMPUS",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 5),
                 Text(
                   'Aishwarya',
                   style: TextStyle(
                     color: dark,
-                    fontSize: 30,
+                    fontSize: 28,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.8,
                   ),
@@ -212,40 +186,79 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ),
 
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.notifications_none_rounded,
-              color: dark,
-              size: 25,
+          // Shopping Bag / Cart with Badge
+          GestureDetector(
+            onTap: _openCart,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    color: dark,
+                    size: 24,
+                  ),
+                  if (_service.cartCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                        child: Text(
+                          '${_service.cartCount}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
 
           const SizedBox(width: 10),
 
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: red,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              color: Colors.white,
-              size: 25,
+          // Profile Button
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedIndex = 2; // Jump to profile tab
+              });
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: red,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.person_outline_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
             ),
           ),
         ],
@@ -260,59 +273,62 @@ class _StudentHomeState extends State<StudentHome> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Container(
-        height: 58,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 18,
-              offset: const Offset(0, 7),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 18),
-            Icon(
-              Icons.search_rounded,
-              color: Colors.grey.shade500,
-              size: 25,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'What are you craving today?',
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
+      child: GestureDetector(
+        onTap: () => _openCanteen("Rec Cafe"),
+        child: Container(
+          height: 56,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 18),
+              Icon(
+                Icons.search_rounded,
+                color: Colors.grey.shade500,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Search food, canteens, drinks...',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-            Container(
-              margin: const EdgeInsets.all(7),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: red,
-                borderRadius: BorderRadius.circular(15),
+              Container(
+                margin: const EdgeInsets.all(6),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: red,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              child: const Icon(
-                Icons.tune_rounded,
-                color: Colors.white,
-                size: 21,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ------------------------------------------------------------
-  // OFFER
+  // OFFER BANNER
   // ------------------------------------------------------------
 
   Widget _buildOfferBanner() {
@@ -323,6 +339,13 @@ class _StudentHomeState extends State<StudentHome> {
         decoration: BoxDecoration(
           color: red,
           borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: red.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -368,7 +391,7 @@ class _StudentHomeState extends State<StudentHome> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            'TODAY ONLY',
+                            'BREAK TIME SPECIAL',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -377,19 +400,19 @@ class _StudentHomeState extends State<StudentHome> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         const Text(
-                          'Hungry?\nWe got you.',
+                          'Hungry?\nSkip The Line.',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 25,
-                            height: 1.05,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 24,
+                            height: 1.1,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                        const SizedBox(height: 9),
+                        const SizedBox(height: 8),
                         Text(
-                          'Special offers across campus',
+                          'Pre-order now & pick up at break',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.85),
                             fontSize: 12,
@@ -399,11 +422,11 @@ class _StudentHomeState extends State<StudentHome> {
                     ),
                   ),
                   const SizedBox(
-                    width: 95,
+                    width: 90,
                     child: Icon(
                       Icons.fastfood_rounded,
                       color: Colors.white,
-                      size: 82,
+                      size: 78,
                     ),
                   ),
                 ],
@@ -419,7 +442,7 @@ class _StudentHomeState extends State<StudentHome> {
   // SECTION TITLE
   // ------------------------------------------------------------
 
-  Widget _sectionTitle(String title, String subtitle) {
+  Widget _sectionTitle(String title, String subtitle, {VoidCallback? onSeeAll}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Row(
@@ -433,12 +456,12 @@ class _StudentHomeState extends State<StudentHome> {
                   title,
                   style: TextStyle(
                     color: dark,
-                    fontSize: 22,
+                    fontSize: 21,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
@@ -449,14 +472,18 @@ class _StudentHomeState extends State<StudentHome> {
               ],
             ),
           ),
-          Text(
-            'See all',
-            style: TextStyle(
-              color: red,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          if (onSeeAll != null)
+            GestureDetector(
+              onTap: onSeeAll,
+              child: Text(
+                'See all',
+                style: TextStyle(
+                  color: red,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -467,8 +494,10 @@ class _StudentHomeState extends State<StudentHome> {
   // ------------------------------------------------------------
 
   Widget _buildCanteens() {
+    final canteens = _service.canteens;
+
     return SizedBox(
-      height: 155,
+      height: 165,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 22),
         scrollDirection: Axis.horizontal,
@@ -476,12 +505,18 @@ class _StudentHomeState extends State<StudentHome> {
         itemCount: canteens.length,
         itemBuilder: (context, index) {
           final canteen = canteens[index];
+          final queueStatus = canteen['queueStatus'] as String? ?? 'Low';
+          final queueWait = canteen['queueWait'] as String? ?? '5 mins';
+
+          Color queueColor = AppColors.queueLow;
+          if (queueStatus.toLowerCase() == 'medium') queueColor = AppColors.queueMedium;
+          if (queueStatus.toLowerCase() == 'high') queueColor = AppColors.queueHigh;
 
           return GestureDetector(
-            onTap: () => openCanteen(canteen['name']),
+            onTap: () => _openCanteen(canteen['name']),
             child: Container(
-              width: 125,
-              margin: const EdgeInsets.only(right: 13),
+              width: 135,
+              margin: const EdgeInsets.only(right: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
@@ -494,40 +529,88 @@ class _StudentHomeState extends State<StudentHome> {
                 ],
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(22),
-                    ),
-                    child: Image.network(
-                      canteen['image'],
-                      height: 92,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) {
-                        return Container(
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(22),
+                        ),
+                        child: Image.network(
+                          canteen['image'],
                           height: 92,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.restaurant),
-                        );
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(
-                          canteen['name'],
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: dark,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) {
+                            return Container(
+                              height: 92,
+                              color: Colors.grey.shade200,
+                              child: const Icon(Icons.restaurant),
+                            );
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: queueColor,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                queueWait.split(' ').first,
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            canteen['name'],
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: dark,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            canteen['location'] ?? 'Campus',
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -545,15 +628,17 @@ class _StudentHomeState extends State<StudentHome> {
   // ------------------------------------------------------------
 
   Widget _buildFoodList() {
+    final featuredFoods = _service.foods.take(4).toList();
+
     return SizedBox(
-      height: 280,
+      height: 285,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 22),
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: foods.length,
+        itemCount: featuredFoods.length,
         itemBuilder: (context, index) {
-          final food = foods[index];
+          final food = featuredFoods[index];
 
           return Container(
             width: 220,
@@ -573,13 +658,14 @@ class _StudentHomeState extends State<StudentHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(25),
                       ),
                       child: Image.network(
-                        food['image'],
+                        food.image,
                         height: 155,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -617,7 +703,7 @@ class _StudentHomeState extends State<StudentHome> {
                             ),
                             const SizedBox(width: 3),
                             Text(
-                              food['rating'],
+                              food.rating.toString(),
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
@@ -630,28 +716,33 @@ class _StudentHomeState extends State<StudentHome> {
 
                     Positioned(
                       right: 12,
-                      bottom: -20,
+                      bottom: -18,
                       child: GestureDetector(
                         onTap: () {
+                          _service.addToCart(food);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                '${food['name']} added to cart',
-                              ),
+                              content: Text('${food.name} added to cart!'),
                               backgroundColor: red,
                               behavior: SnackBarBehavior.floating,
+                              action: SnackBarAction(
+                                label: 'VIEW CART',
+                                textColor: Colors.white,
+                                onPressed: _openCart,
+                              ),
                             ),
                           );
                         },
                         child: Container(
-                          width: 44,
-                          height: 44,
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: red,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: red.withOpacity(0.3),
+                                color: red.withOpacity(0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -660,7 +751,7 @@ class _StudentHomeState extends State<StudentHome> {
                           child: const Icon(
                             Icons.add_rounded,
                             color: Colors.white,
-                            size: 25,
+                            size: 24,
                           ),
                         ),
                       ),
@@ -670,23 +761,38 @@ class _StudentHomeState extends State<StudentHome> {
 
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 17, 14, 0),
-                  child: Text(
-                    food['name'],
-                    style: TextStyle(
-                      color: dark,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 10,
+                        color: food.isVeg ? AppColors.veg : AppColors.nonVeg,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          food.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: dark,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 5, 14, 0),
+                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
                   child: Text(
-                    food['canteen'],
+                    "${food.category} • ${food.preparationTime} mins prep",
                     style: TextStyle(
                       color: Colors.grey.shade500,
                       fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -696,7 +802,7 @@ class _StudentHomeState extends State<StudentHome> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                   child: Text(
-                    food['price'],
+                    "₹${food.price.toStringAsFixed(0)}",
                     style: TextStyle(
                       color: red,
                       fontSize: 18,
@@ -713,10 +819,15 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
-  // FAVOURITE
+  // FAVOURITE CARD
   // ------------------------------------------------------------
 
   Widget _buildFavouriteCard() {
+    final favFood = _service.foods.firstWhere(
+      (f) => f.name.contains("Roll") || f.name.contains("Burger"),
+      orElse: () => _service.foods.first,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Container(
@@ -732,7 +843,7 @@ class _StudentHomeState extends State<StudentHome> {
                 left: Radius.circular(25),
               ),
               child: Image.network(
-                'https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=600',
+                favFood.image,
                 width: 125,
                 height: 125,
                 fit: BoxFit.cover,
@@ -749,7 +860,6 @@ class _StudentHomeState extends State<StudentHome> {
                 },
               ),
             ),
-
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 15, 15, 15),
@@ -764,11 +874,11 @@ class _StudentHomeState extends State<StudentHome> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Classic Chicken Roll',
+                    Text(
+                      favFood.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -778,25 +888,43 @@ class _StudentHomeState extends State<StudentHome> {
                     Row(
                       children: [
                         Text(
-                          '₹109',
-                          style: TextStyle(
+                          '₹${favFood.price.toStringAsFixed(0)}',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 17,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                         const Spacer(),
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 19,
+                        GestureDetector(
+                          onTap: () {
+                            _service.addToCart(favFood);
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${favFood.name} added to cart!'),
+                                backgroundColor: red,
+                                behavior: SnackBarBehavior.floating,
+                                action: SnackBarAction(
+                                  label: 'VIEW CART',
+                                  textColor: Colors.white,
+                                  onPressed: _openCart,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                       ],
@@ -807,84 +935,6 @@ class _StudentHomeState extends State<StudentHome> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------
-  // ORDERS
-  // ------------------------------------------------------------
-
-  Widget _buildOrdersPlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.receipt_long_rounded,
-            size: 65,
-            color: red,
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'My Orders',
-            style: TextStyle(
-              color: dark,
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your orders will appear here.',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------
-  // PROFILE
-  // ------------------------------------------------------------
-
-  Widget _buildProfilePlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: red,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              color: Colors.white,
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Aishwarya',
-            style: TextStyle(
-              color: dark,
-              fontSize: 25,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Student Profile',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -941,12 +991,12 @@ class _StudentHomeState extends State<StudentHome> {
     required String label,
     required int index,
   }) {
-    final bool selected = selectedIndex == index;
+    final bool selected = _selectedIndex == index;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          selectedIndex = index;
+          _selectedIndex = index;
         });
       },
       child: AnimatedContainer(
