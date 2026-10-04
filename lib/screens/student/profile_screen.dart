@@ -16,6 +16,213 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _pushNotifications = true;
   bool _orderReminders = true;
   double _walletBalance = 450.0;
+  int _activeProfileIndex = 0;
+
+  final List<Map<String, dynamic>> _netflixProfiles = [
+    {
+      "name": "Aishwarya",
+      "role": "Student",
+      "tag": "Active",
+      "icon": Icons.person_rounded,
+      "color": const Color(0xFFE50914),
+      "gradient": const [Color(0xFFE50914), Color(0xFF831010)],
+    },
+    {
+      "name": "Faculty",
+      "role": "Staff",
+      "tag": "Campus",
+      "icon": Icons.tv_rounded,
+      "color": const Color(0xFF0284C7),
+      "gradient": const [Color(0xFF0284C7), Color(0xFF0369A1)],
+    },
+    {
+      "name": "Mentors",
+      "role": "Guide",
+      "tag": "Reviewer",
+      "icon": Icons.psychology_rounded,
+      "color": const Color(0xFF16A34A),
+      "gradient": const [Color(0xFF16A34A), Color(0xFF15803D)],
+    },
+    {
+      "name": "Add",
+      "role": "New",
+      "tag": "Add",
+      "icon": Icons.add_rounded,
+      "isAdd": true,
+      "color": const Color(0xFF4B5563),
+      "gradient": const [Color(0xFF374151), Color(0xFF1F2937)],
+    },
+  ];
+
+  Widget _buildNetflixProfileSwitcher() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14161D),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Who's Ordering?",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    "Switch campus profile or persona",
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.15),
+                    width: 1,
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.edit_rounded, color: Colors.white70, size: 12),
+                    SizedBox(width: 4),
+                    Text(
+                      "Edit",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(_netflixProfiles.length, (index) {
+              final profile = _netflixProfiles[index];
+              final isSelected = _activeProfileIndex == index;
+              final isAdd = profile['isAdd'] == true;
+
+              return GestureDetector(
+                onTap: () {
+                  if (isAdd) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Add new student or faculty profile"),
+                        behavior: SnackBarBehavior.floating,
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  } else {
+                    setState(() {
+                      _activeProfileIndex = index;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Active Profile: ${profile['name']} (${profile['role']})"),
+                        backgroundColor: profile['color'] as Color,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                },
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: profile['gradient'] as List<Color>,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          width: isSelected ? 2.5 : 1,
+                        ),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: (profile['color'] as Color).withOpacity(0.6),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          profile['icon'] as IconData,
+                          color: Colors.white,
+                          size: isAdd ? 26 : 28,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      profile['name'] as String,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.white70,
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      profile['role'] as String,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white54 : Colors.white38,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showTopUpDialog() {
     final controller = TextEditingController(text: "200");
@@ -101,6 +308,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(AppConstants.screenPadding),
         child: Column(
           children: [
+            // Netflix-inspired profile switcher (Attachment 2)
+            _buildNetflixProfileSwitcher(),
+
             // Student Card
             Container(
               padding: const EdgeInsets.all(20),
