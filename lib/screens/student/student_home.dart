@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/firestore_service.dart';
+import '../../services/offline_sync_service.dart';
 import '../../utils/colors.dart';
 import 'canteen_heatmap_screen.dart';
 import 'canteen_menu.dart';
@@ -108,23 +109,35 @@ class _StudentHomeState extends State<StudentHome> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildHeader(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           _buildSearchBar(),
+          _buildDistrictExperienceCards(),
+          _buildSmartLoadBalancerBanner(),
+          _buildIntelligentRecommendations(),
           _buildHighDemandAlertBanner(),
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
           _buildOfferBanner(),
           const SizedBox(height: 24),
           _buildCrowdHeatmapBanner(),
           const SizedBox(height: 28),
           _sectionTitle(
             'Choose your canteen',
-            'Skip the line • Live queue wait times',
+            'Live queue • Crowd heat level • Wait prediction',
             actionLabel: 'Crowd Map',
             onSeeAll: _openHeatmap,
           ),
           const SizedBox(height: 16),
           _buildCanteens(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 30),
+          _sectionTitle(
+            '🔥 Trending across campus',
+            'Selling fast • Real-time live demand',
+            actionLabel: 'View All',
+            onSeeAll: () => _openCanteen("Rec Cafe"),
+          ),
+          const SizedBox(height: 16),
+          _buildTrendingSection(),
+          const SizedBox(height: 30),
           _sectionTitle(
             'Featured today',
             'Fast preparation • Popular campus picks',
@@ -146,55 +159,123 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
-  // HEADER
+  // HEADER (DISTRICT STYLE: LOCATION ROW + RING AVATAR)
   // ------------------------------------------------------------
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
+          // District-style Vibrant Location Pin
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.location_on_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Good day 👋',
+                      'Rajalakshmi Nagar',
+                      style: TextStyle(
+                        color: dark,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: dark,
+                      size: 20,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      'Thandalam, Chennai',
                       style: TextStyle(
                         color: Colors.grey.shade600,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text(
-                        "REC CAMPUS",
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                    // Offline / Online Status Pill
+                    GestureDetector(
+                      onTap: () {
+                        final nextState = !OfflineSyncService().isOnline;
+                        OfflineSyncService().toggleOnlineStatus(nextState);
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              nextState
+                                  ? "🟢 Cloud Synced: Online mode active"
+                                  : "⚡ Offline Mode: Orders cached locally & will auto-sync",
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: OfflineSyncService().isOnline
+                              ? const Color(0xFFE8F5E9)
+                              : const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: OfflineSyncService().isOnline
+                                ? const Color(0xFF81C784)
+                                : const Color(0xFFFFB74D),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              OfflineSyncService().isOnline
+                                  ? Icons.cloud_done_rounded
+                                  : Icons.wifi_off_rounded,
+                              size: 10,
+                              color: OfflineSyncService().isOnline
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFE65100),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              OfflineSyncService().isOnline ? "Synced" : "Offline",
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: OfflineSyncService().isOnline
+                                    ? const Color(0xFF2E7D32)
+                                    : const Color(0xFFE65100),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Aishwarya',
-                  style: TextStyle(
-                    color: dark,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
-                  ),
                 ),
               ],
             ),
@@ -204,16 +285,16 @@ class _StudentHomeState extends State<StudentHome> {
           GestureDetector(
             onTap: _openCart,
             child: Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.06),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
@@ -223,12 +304,12 @@ class _StudentHomeState extends State<StudentHome> {
                   Icon(
                     Icons.shopping_bag_outlined,
                     color: dark,
-                    size: 24,
+                    size: 22,
                   ),
                   if (_service.cartCount > 0)
                     Positioned(
-                      right: 8,
-                      top: 8,
+                      right: 6,
+                      top: 6,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: const BoxDecoration(
@@ -254,7 +335,7 @@ class _StudentHomeState extends State<StudentHome> {
 
           const SizedBox(width: 10),
 
-          // Profile Button
+          // District-style Profile Circle Avatar with Ring
           GestureDetector(
             onTap: () {
               setState(() {
@@ -262,16 +343,25 @@ class _StudentHomeState extends State<StudentHome> {
               });
             },
             child: Container(
-              width: 48,
-              height: 48,
+              padding: const EdgeInsets.all(2.5),
               decoration: BoxDecoration(
-                color: red,
-                borderRadius: BorderRadius.circular(16),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
-              child: const Icon(
-                Icons.person_outline_rounded,
-                color: Colors.white,
-                size: 24,
+              child: const CircleAvatar(
+                radius: 19,
+                backgroundColor: AppColors.primaryDark,
+                child: Text(
+                  'A',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
           ),
@@ -281,62 +371,711 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
-  // SEARCH
+  // SEARCH (THEOBROMA / DISTRICT PILL STYLE)
   // ------------------------------------------------------------
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
         onTap: () => _openCanteen("Rec Cafe"),
         child: Container(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 18,
-                offset: const Offset(0, 7),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Row(
             children: [
-              const SizedBox(width: 18),
+              const SizedBox(width: 16),
               Icon(
                 Icons.search_rounded,
-                color: Colors.grey.shade500,
-                size: 24,
+                color: AppColors.primary,
+                size: 22,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Search food, canteens, drinks...',
+                  "Search for 'burger', 'cold coffee'...",
                   style: TextStyle(
                     color: Colors.grey.shade500,
-                    fontSize: 14,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
+              Icon(
+                Icons.mic_none_rounded,
+                color: Colors.grey.shade600,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
               Container(
-                margin: const EdgeInsets.all(6),
-                width: 44,
-                height: 44,
+                margin: const EdgeInsets.only(right: 6),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: red,
-                  borderRadius: BorderRadius.circular(15),
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.tune_rounded,
                   color: Colors.white,
-                  size: 20,
+                  size: 18,
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------
+  // DISTRICT APP STYLE: EXPERIENCE / CATEGORY TILES
+  // ------------------------------------------------------------
+
+  Widget _buildDistrictExperienceCards() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _experienceCard(
+              title: "Dining",
+              subtitle: "4 Canteens",
+              badge: "EXPLORE",
+              icon: Icons.restaurant_rounded,
+              gradientColors: [const Color(0xFF1E212A), const Color(0xFF13151B)],
+              iconColor: const Color(0xFFFF6B4A),
+              onTap: () => _openCanteen("Rec Cafe"),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _experienceCard(
+              title: "Express Hub",
+              subtitle: "Instant Pick",
+              badge: "4 MINS",
+              icon: Icons.bolt_rounded,
+              gradientColors: [const Color(0xFF1E212A), const Color(0xFF13151B)],
+              iconColor: const Color(0xFFFBBF24),
+              onTap: () => _openCanteen("Hut Cafe"),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _experienceCard(
+              title: "Crowd Map",
+              subtitle: "Live Radar",
+              badge: "LIVE",
+              icon: Icons.radar_rounded,
+              gradientColors: [const Color(0xFF1E212A), const Color(0xFF13151B)],
+              iconColor: const Color(0xFF10B981),
+              onTap: _openHeatmap,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _experienceCard({
+    required String title,
+    required String subtitle,
+    required String badge,
+    required IconData icon,
+    required List<Color> gradientColors,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 102,
+        padding: const EdgeInsets.all(11),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.18),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 18),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    badge,
+                    style: TextStyle(
+                      color: iconColor,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 1.5),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------
+  // SMART KITCHEN LOAD BALANCER BANNER (ZEPTO / DISTRICT STYLE)
+  // ------------------------------------------------------------
+  Widget _buildSmartLoadBalancerBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2E1065),
+              Color(0xFF4C1D95),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4C1D95).withOpacity(0.28),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade400,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, size: 14, color: Colors.black),
+                      SizedBox(width: 3),
+                      Text(
+                        "SMART LOAD BALANCER",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    "⚡ Save 8 Mins",
+                    style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Hungry for Burgers or Quick Bites?",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Rec Cafe has 12 orders queued (15m wait). Switch to Hut Cafe (4m wait) to get freshly prepared food 11 mins faster!",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.85),
+                fontSize: 12,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.compare_arrows_rounded, color: Colors.amber, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            "Rec Cafe: 15m ➔ Hut Cafe: 4m",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.95),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => _openCanteen("Hut Cafe"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber.shade400,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    "Switch Now",
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------
+  // INTELLIGENT FOOD RECOMMENDATIONS (ZEPTO STYLE)
+  // ------------------------------------------------------------
+  Widget _buildIntelligentRecommendations() {
+    final recs = _service.personalizedRecommendations;
+    if (recs.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Personalized for You",
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      "You usually order Cold Coffee & Dosa on Fridays",
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 125,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: recs.length,
+            itemBuilder: (context, index) {
+              final food = recs[index];
+              return Container(
+                width: 220,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        food.image,
+                        width: 70,
+                        height: 70,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 70,
+                          height: 70,
+                          color: Colors.grey.shade200,
+                          child: const Icon(Icons.fastfood, size: 28),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "⚡ ${food.preparationTime}m prep",
+                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            food.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "₹${food.price.toStringAsFixed(0)}",
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
+                          ),
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () {
+                              _service.addToCart(food);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("${food.name} added to cart!"),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              "+ Quick Add",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------
+  // TRENDING ACROSS CAMPUS (THEOBROMA / ATTACHMENT 3 STYLE)
+  // ------------------------------------------------------------
+  Widget _buildTrendingSection() {
+    final trending = _service.trendingFoods;
+    if (trending.isEmpty) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 228,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: trending.length,
+        itemBuilder: (context, index) {
+          final food = trending[index];
+          final qty = _service.getFoodQuantity(food.id);
+
+          return GestureDetector(
+            onTap: () => _openCanteen(food.canteen ?? "Rec Cafe"),
+            child: Container(
+              width: 155,
+              margin: const EdgeInsets.only(right: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                        child: Image.network(
+                          food.image,
+                          height: 105,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 105,
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.fastfood, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                      // Attachment 3 ⭐ Bestseller badge
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDC2626),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            "⭐ Bestseller",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Veg/Non-Veg + Rating pill row
+                        Row(
+                          children: [
+                            Container(
+                              width: 13,
+                              height: 13,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: food.isVeg ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Center(
+                                child: Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: food.isVeg ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDCFCE7),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.star_rounded, size: 10, color: Color(0xFF15803D)),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    "${food.rating}",
+                                    style: const TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF15803D),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          food.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Only ${food.remainingCount} left • ${food.canteen ?? 'Campus'}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: Colors.deepOrange.shade700,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "₹${food.price.toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            // Attachment 3 crisp outline ADD button
+                            InkWell(
+                              onTap: () {
+                                _service.addToCart(food);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text("${food.name} added!"),
+                                    duration: const Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: qty > 0 ? const Color(0xFF16A34A) : Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFF16A34A),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  qty > 0 ? "$qty in cart" : "ADD",
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    color: qty > 0 ? Colors.white : const Color(0xFF16A34A),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -439,112 +1178,227 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
-  // OFFER BANNER
+  // IN THE SPOTLIGHT (DISTRICT APP STYLE POSTER CAROUSEL)
   // ------------------------------------------------------------
 
   Widget _buildOfferBanner() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Container(
-        height: 165,
-        decoration: BoxDecoration(
-          color: red,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: red.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -35,
-              top: -30,
-              child: Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.08),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'In the spotlight',
+                style: TextStyle(
+                  color: dark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
                 ),
               ),
-            ),
-            Positioned(
-              right: 12,
-              bottom: -25,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.06),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: dark, size: 22),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 175,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B151B), Color(0xFF1E1116)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.28),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
+              ],
+              border: Border.all(
+                color: Colors.white.withOpacity(0.12),
+                width: 1,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(22, 22, 20, 18),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'BREAK TIME SPECIAL',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1,
+            child: Stack(
+              children: [
+                // Subtle decorative background elements
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.05),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 14,
+                  bottom: 12,
+                  child: Icon(
+                    Icons.fastfood_rounded,
+                    color: Colors.white.withOpacity(0.15),
+                    size: 90,
+                  ),
+                ),
+
+                // Card content
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'BREAK TIME SPECIAL',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.8,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Hungry?\nSkip The Line.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            height: 1.1,
-                            fontWeight: FontWeight.w900,
+                          // District style Bookmark button
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.4),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.bookmark_border_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Pre-order now & pick up at break',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
-                            fontSize: 12,
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Hungry? Skip The Line.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              height: 1.15,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Pre-order now & pick up at break • Avoid campus rush',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _openCanteen("Rec Cafe"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Pre-order Now",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                SizedBox(width: 4),
+                                Icon(Icons.arrow_forward_rounded, size: 14),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(
-                    width: 90,
-                    child: Icon(
-                      Icons.fastfood_rounded,
-                      color: Colors.white,
-                      size: 78,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 10),
+          // District style dot pagination indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 22,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -734,7 +1588,7 @@ class _StudentHomeState extends State<StudentHome> {
     final canteens = _service.canteens;
 
     return SizedBox(
-      height: 165,
+      height: 195,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 22),
         scrollDirection: Axis.horizontal,
@@ -745,7 +1599,7 @@ class _StudentHomeState extends State<StudentHome> {
             return GestureDetector(
               onTap: _openHeatmap,
               child: Container(
-                width: 135,
+                width: 148,
                 margin: const EdgeInsets.only(right: 14),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -814,17 +1668,16 @@ class _StudentHomeState extends State<StudentHome> {
           }
 
           final canteen = canteens[index];
-          final queueStatus = canteen['queueStatus'] as String? ?? 'Low';
-          final queueWait = canteen['queueWait'] as String? ?? '5 mins';
-
-          Color queueColor = AppColors.queueLow;
-          if (queueStatus.toLowerCase() == 'medium') queueColor = AppColors.queueMedium;
-          if (queueStatus.toLowerCase() == 'high') queueColor = AppColors.queueHigh;
+          final liveStatus = _service.getCanteenLiveStatus(canteen['name']);
+          final queueWait = "${liveStatus['waitMins']}m wait";
+          final queueColor = liveStatus['crowd'] == 'Heavy'
+              ? AppColors.queueHigh
+              : (liveStatus['crowd'] == 'Medium' ? AppColors.queueMedium : AppColors.queueLow);
 
           return GestureDetector(
             onTap: () => _openCanteen(canteen['name']),
             child: Container(
-              width: 135,
+              width: 148,
               margin: const EdgeInsets.only(right: 14),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -860,14 +1713,31 @@ class _StudentHomeState extends State<StudentHome> {
                           },
                         ),
                       ),
+                      // Crowd Pill (Top-Left)
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.65),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            "${liveStatus['crowdIcon']} ${liveStatus['crowd']}",
+                            style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      // Wait Time (Top-Right)
                       Positioned(
                         right: 8,
                         top: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
@@ -881,8 +1751,8 @@ class _StudentHomeState extends State<StudentHome> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                queueWait.split(' ').first,
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                queueWait,
+                                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
@@ -917,6 +1787,18 @@ class _StudentHomeState extends State<StudentHome> {
                             style: TextStyle(
                               color: Colors.grey.shade500,
                               fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "${liveStatus['queueOrders']} Orders • ${liveStatus['confidence']} Conf.",
+                              style: TextStyle(fontSize: 8.5, color: Colors.grey.shade700, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -1230,28 +2112,36 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
-  // BOTTOM NAVIGATION
+  // BOTTOM NAVIGATION (DISTRICT STYLE: FLOATING DARK DOCK)
   // ------------------------------------------------------------
 
   Widget _buildBottomNavigation() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-      decoration: BoxDecoration(
-        color: cream,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
+    return SafeArea(
+      top: false,
       child: Container(
-        height: 65,
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        height: 66,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFF161820),
+          borderRadius: BorderRadius.circular(36),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
+          ),
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -1289,31 +2179,38 @@ class _StudentHomeState extends State<StudentHome> {
           _selectedIndex = index;
         });
       },
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 8,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: selected ? 18 : 14,
+          vertical: 9,
         ),
         decoration: BoxDecoration(
-          color: selected ? red.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
+          color: selected ? const Color(0xFF282B36) : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: selected
+              ? Border.all(color: Colors.white.withOpacity(0.12), width: 1)
+              : null,
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: selected ? red : Colors.grey.shade500,
+              color: selected ? Colors.white : Colors.grey.shade400,
               size: 22,
             ),
             if (selected) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 8),
               Text(
                 label,
-                style: TextStyle(
-                  color: red,
-                  fontSize: 12,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2,
                 ),
               ),
             ],

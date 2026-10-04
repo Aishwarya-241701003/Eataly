@@ -24,7 +24,8 @@ class EatalyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Eataly',
       theme: ThemeData(
-        fontFamily: 'Arial',
+        fontFamily: 'sans-serif',
+        fontFamilyFallback: const ['Arial', 'Helvetica', 'sans-serif'],
         useMaterial3: true,
       ),
       home: const SplashScreen(),

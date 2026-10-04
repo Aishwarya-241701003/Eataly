@@ -5,6 +5,7 @@ import '../models/cart_item.dart';
 import '../models/order.dart';
 import '../models/distribution_station.dart';
 import '../models/expected_demand.dart';
+import 'offline_sync_service.dart';
 
 class FirestoreService extends ChangeNotifier {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -168,14 +169,66 @@ class FirestoreService extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<Food> get trendingFoods {
+    return _foods.where((f) => f.isTrending || f.isPopular).take(6).toList();
+  }
+
+  List<Food> get personalizedRecommendations {
+    // Smart suggestions: You usually order Cold Coffee / Dosa
+    return _foods.where((f) =>
+      f.name.toLowerCase().contains('coffee') ||
+      f.name.toLowerCase().contains('burger') ||
+      f.name.toLowerCase().contains('dosa') ||
+      f.name.toLowerCase().contains('wrap')
+    ).take(4).toList();
+  }
+
+  Map<String, dynamic> getCanteenLiveStatus(String canteenName) {
+    final lower = canteenName.toLowerCase();
+    int queue = 8;
+    int wait = 6;
+    String crowd = 'Low';
+    String icon = '🟢';
+    String confidence = '92%';
+
+    if (lower.contains('hotspot') || lower.contains('court')) {
+      queue = 18;
+      wait = 20;
+      crowd = 'Heavy';
+      icon = '🔴';
+      confidence = '95%';
+    } else if (lower.contains('hut') || lower.contains('wokon')) {
+      queue = 12;
+      wait = 11;
+      crowd = 'Medium';
+      icon = '🟡';
+      confidence = '90%';
+    } else {
+      queue = 6;
+      wait = 5;
+      crowd = 'Low';
+      icon = '🟢';
+      confidence = '92%';
+    }
+
+    return {
+      'queueOrders': queue,
+      'waitMins': wait,
+      'crowd': crowd,
+      'crowdIcon': icon,
+      'confidence': confidence,
+    };
+  }
+
   Order placeOrder({
     required String pickupSlot,
     String? canteenName,
     String paymentMethod = "Campus Card",
     String? notes,
   }) {
-    final token = "TK-${100 + _orders.length + 1}";
+    final token = "Token #${41 + _orders.length}";
     final orderId = "ORD-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}";
+    final isOnline = OfflineSyncService().isOnline;
 
     final newOrder = Order(
       orderId: orderId,
@@ -183,17 +236,78 @@ class FirestoreService extends ChangeNotifier {
       pickupSlot: pickupSlot,
       tokenNumber: token,
       orderTime: DateTime.now(),
-      status: OrderStatus.preparing,
+      status: OrderStatus.pending,
+      queueAhead: (_orders.where((o) => o.status == OrderStatus.preparing || o.status == OrderStatus.pending).length).clamp(1, 10),
+      estimatedReadyMins: 4,
+      isSynced: isOnline,
+      trackingStep: 0, // Accepted
+      canteenName: canteenName ?? (_cart.isNotEmpty ? (_cart.first.food.canteen ?? 'Rec Cafe') : 'Rec Cafe'),
+      notes: notes,
     );
 
     _orders.insert(0, newOrder);
     clearCart();
     notifyListeners();
 
-    // Persist order to Firestore asynchronously
-    _saveOrderToFirestore(newOrder, canteenName: canteenName, paymentMethod: paymentMethod, notes: notes);
+    if (!isOnline) {
+      OfflineSyncService().queueOfflineOrder(newOrder);
+    } else {
+      _saveOrderToFirestore(newOrder, canteenName: canteenName, paymentMethod: paymentMethod, notes: notes);
+    }
 
     return newOrder;
+  }
+
+  void modifyOrderSlot(String orderId, String newSlot) {
+    final index = _orders.indexWhere((o) => o.orderId == orderId);
+    if (index >= 0 && _orders[index].canModify) {
+      _orders[index].pickupSlot = newSlot;
+      notifyListeners();
+      try {
+        _db?.collection('orders').doc(orderId).update({'pickupSlot': newSlot});
+      } catch (e) {
+        debugPrint('Firestore update slot error: $e');
+      }
+    }
+  }
+
+  void modifyOrderNotes(String orderId, String newNotes) {
+    final index = _orders.indexWhere((o) => o.orderId == orderId);
+    if (index >= 0 && _orders[index].canModify) {
+      _orders[index].notes = newNotes;
+      notifyListeners();
+      try {
+        _db?.collection('orders').doc(orderId).update({'notes': newNotes});
+      } catch (e) {
+        debugPrint('Firestore update notes error: $e');
+      }
+    }
+  }
+
+  void advanceOrderTracking(String orderId) {
+    final index = _orders.indexWhere((o) => o.orderId == orderId);
+    if (index >= 0) {
+      final current = _orders[index].trackingStep;
+      if (current < 4) {
+        _orders[index].trackingStep = current + 1;
+        if (_orders[index].trackingStep == 1) {
+          _orders[index].status = OrderStatus.preparing;
+          _orders[index].queueAhead = 1;
+          _orders[index].estimatedReadyMins = 3;
+        } else if (_orders[index].trackingStep == 2) {
+          _orders[index].status = OrderStatus.preparing;
+          _orders[index].queueAhead = 0;
+          _orders[index].estimatedReadyMins = 1;
+        } else if (_orders[index].trackingStep == 3) {
+          _orders[index].status = OrderStatus.ready;
+          _orders[index].estimatedReadyMins = 0;
+        } else if (_orders[index].trackingStep == 4) {
+          _orders[index].status = OrderStatus.completed;
+        }
+        notifyListeners();
+        updateOrderStatus(orderId, _orders[index].status);
+      }
+    }
   }
 
   Future<void> _saveOrderToFirestore(

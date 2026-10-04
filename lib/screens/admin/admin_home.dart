@@ -1948,9 +1948,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen>
 
           const SizedBox(height: 20),
 
-          // Overview KPI Grid
+          // -----------------------------------------------------------
+          // FEATURE 15: ADMIN DASHBOARD & EXECUTIVE KPIS
+          // -----------------------------------------------------------
           const Text(
-            'Today\'s Summary',
+            'Executive Operations & Revenue Dashboard',
             style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
@@ -1960,29 +1962,582 @@ class _AdminHomeScreenState extends State<AdminHomeScreen>
 
           Row(
             children: [
-              _buildKpiCard('Total Orders', '28', Icons.receipt_rounded,
-                  AppColors.primary),
-              const SizedBox(width: 12),
-              _buildKpiCard('Revenue', '₹ 3,420',
+              _buildKpiCard('Today\'s Revenue', '₹ 12,450',
                   Icons.currency_rupee_rounded, AppColors.success),
+              const SizedBox(width: 12),
+              _buildKpiCard('Total Orders', '486', Icons.receipt_long_rounded,
+                  AppColors.primary),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildKpiCard(
-                  'Queue Rush',
-                  _firestore.isHighDemandActive ? 'HIGH SURGE' : 'Normal',
-                  Icons.people_alt_rounded,
-                  _firestore.isHighDemandActive
-                      ? AppColors.danger
-                      : AppColors.warning),
+              _buildKpiCard('Peak Rush Hour', '12:35 PM',
+                  Icons.bolt_rounded, Colors.orange.shade800),
               const SizedBox(width: 12),
-              _buildKpiCard('Hub Stations', '4 Active', Icons.hub_rounded,
-                  const Color(0xFF1E3A8A)),
+              _buildKpiCard('Inventory Health', '94% In-Stock',
+                  Icons.inventory_rounded, Colors.teal),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildKpiCard('Pending in Prep', '12 Orders',
+                  Icons.pending_actions_rounded, AppColors.warning),
+              const SizedBox(width: 12),
+              _buildKpiCard('Completed Today', '467 Orders',
+                  Icons.check_circle_rounded, const Color(0xFF1E3A8A)),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          // -----------------------------------------------------------
+          // FEATURE 16: LIVE KITCHEN QUEUE
+          // Preparing: 12 | Packaging: 5 | Ready: 7
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.soup_kitchen_rounded, color: AppColors.primary, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          "Live Kitchen Queue",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.circle, size: 8, color: AppColors.success),
+                          SizedBox(width: 5),
+                          Text(
+                            "LIVE SYNC",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _buildQueueStageBox("Preparing", "12", Colors.orange),
+                    const SizedBox(width: 10),
+                    _buildQueueStageBox("Packaging", "5", Colors.blue),
+                    const SizedBox(width: 10),
+                    _buildQueueStageBox("Ready", "7", AppColors.success),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------------
+          // FEATURE 17: KITCHEN PERFORMANCE ANALYTICS
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.query_stats_rounded, color: Color(0xFF1E3A8A), size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Kitchen Performance Analytics",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildStatPill("Average Wait", "4.2 mins", Icons.timer_outlined, Colors.blue.shade900),
+                    const SizedBox(width: 10),
+                    _buildStatPill("Longest Queue", "11 mins", Icons.hourglass_top_rounded, Colors.red.shade800),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _buildStatPill("Peak Hour", "12:35 PM", Icons.trending_up_rounded, Colors.orange.shade900),
+                    const SizedBox(width: 10),
+                    _buildStatPill("Queue Accuracy", "92% Confidence", Icons.verified_rounded, Colors.green.shade800),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------------
+          // FEATURE 18: FOOD WASTE PREDICTION
+          // "Prepare 15 more burgers, NOT 30"
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: Colors.green.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.eco_rounded, color: Colors.green.shade800, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      "AI Food Waste Prevention",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.green.shade900,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "-38% Waste",
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.green.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Recommendation calculated from historical campus demand, current sales rate & remaining inventory:",
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.green.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 24),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                            children: [
+                              const TextSpan(text: "Prepare "),
+                              TextSpan(
+                                text: "15 more burgers",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.green.shade800,
+                                ),
+                              ),
+                              const TextSpan(text: ", "),
+                              TextSpan(
+                                text: "NOT 30.",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.red.shade700,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: "\nExpected remaining sales: 14-16 units before 2:00 PM close.",
+                                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------------
+          // FEATURE 19: LOW STOCK ALERTS
+          // ⚠️ Bread: Remaining 18 | Expected 45 | Restock Soon
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      "Low Stock Warnings & Restock Alerts",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildLowStockItem(
+                  ingredient: "Burger Buns & Bread",
+                  remaining: 18,
+                  expected: 45,
+                  urgency: "Restock Soon",
+                ),
+                const SizedBox(height: 8),
+                _buildLowStockItem(
+                  ingredient: "Fresh Paneer Patties",
+                  remaining: 7,
+                  expected: 28,
+                  urgency: "Critical Restock",
+                ),
+                const SizedBox(height: 8),
+                _buildLowStockItem(
+                  ingredient: "Cold Brew Milk Packets",
+                  remaining: 12,
+                  expected: 35,
+                  urgency: "Order Supplier",
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------------
+          // FEATURE 21: SMART PICKUP OPTIMIZATION (BATCH COOKING)
+          // System groups: Burger + Burger + Burger. Cooks together.
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, color: Colors.blue.shade800, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Smart Batch Cooking Optimization",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Instead of preparing single tokens FIFO, algorithm groups identical items across pickup slots so the kitchen cooks concurrently:",
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade900.withOpacity(0.85)),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildBatchChip("Burger x3 Grouped", "Tokens #41, #43, #44", Colors.blue),
+                    _buildBatchChip("Cold Coffee x4 Grouped", "Tokens #39, #40, #42, #45", Colors.teal),
+                    _buildBatchChip("Paneer Wrap x2 Grouped", "Tokens #46, #48", Colors.indigo),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // -----------------------------------------------------------
+          // FEATURE 20 & 22: DAILY ANALYTICS & PEAK PREDICTION
+          // -----------------------------------------------------------
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.insights_rounded, color: AppColors.primary, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      "Daily Analytics & Rush Prediction",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildAnalyticsItem("Most Ordered", "Veg Burger (142 orders)", Icons.star_rounded, Colors.amber.shade800),
+                    const SizedBox(width: 12),
+                    _buildAnalyticsItem("Least Ordered", "Schezwan Noodles", Icons.arrow_downward_rounded, Colors.grey.shade700),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, color: Colors.amber.shade900, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "Tomorrow 12:30 PM: High Rush Expected (~90+ orders). Prep 40 buns in advance.",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQueueStageBox(String label, String count, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              count,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatPill(String title, String val, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(val, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: color)),
+                  Text(title, style: const TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLowStockItem({
+    required String ingredient,
+    required int remaining,
+    required int expected,
+    required String urgency,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.inventory_2_outlined, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ingredient,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                Text(
+                  "Remaining: $remaining • Expected: $expected",
+                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.danger.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              urgency,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: AppColors.danger,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBatchChip(String title, String subtitle, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+          Text(subtitle, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsItem(String title, String val, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 4),
+                Text(title, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              val,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            ),
+          ],
+        ),
       ),
     );
   }

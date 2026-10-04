@@ -3,9 +3,7 @@ import '../../models/food.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../utils/constants.dart';
-import '../../widgets/category_chip.dart';
 import '../../widgets/food_cart.dart';
-import '../../widgets/search_bar.dart';
 import 'cart_screen.dart';
 
 class CanteenMenu extends StatefulWidget {
@@ -27,6 +25,9 @@ class _CanteenMenuState extends State<CanteenMenu> {
   String _selectedCategory = "All";
   String _selectedDiet = "All"; // "All", "Veg", "Non-Veg"
   String _searchQuery = "";
+  bool _isGridView = true;
+  bool _eatRightOnly = false;
+  bool _ratingFourPlus = false;
 
   @override
   void initState() {
@@ -89,8 +90,10 @@ class _CanteenMenuState extends State<CanteenMenu> {
       final matchesDiet = _selectedDiet == "All" ||
           (_selectedDiet == "Veg" && food.isVeg) ||
           (_selectedDiet == "Non-Veg" && !food.isVeg);
+      final matchesEatRight = !_eatRightOnly || (food.isVeg && food.preparationTime <= 15);
+      final matchesRating = !_ratingFourPlus || food.rating >= 4.0;
 
-      return matchesSearch && matchesCategory && matchesDiet;
+      return matchesSearch && matchesCategory && matchesDiet && matchesEatRight && matchesRating;
     }).toList();
   }
 
@@ -272,80 +275,169 @@ class _CanteenMenuState extends State<CanteenMenu> {
 
             const SizedBox(height: 18),
 
-            // Search Bar
-            AppSearchBar(
-              controller: _searchController,
-              hintText: 'Search food in ${widget.canteenName}...',
-              onChanged: (val) {
-                setState(() {
-                  _searchQuery = val;
-                });
-              },
+            const SizedBox(height: 14),
+
+            // Top Search Bar (Image 3 Style: Pill container with mic & profile)
+            Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search_rounded, color: Colors.grey.shade600, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        hintText: "Search in ${widget.canteenName}",
+                        hintStyle: TextStyle(fontSize: 13.5, color: Colors.grey.shade500),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  if (_searchQuery.isNotEmpty)
+                    GestureDetector(
+                      onTap: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = "";
+                        });
+                      },
+                      child: const Icon(Icons.close_rounded, size: 18, color: Colors.grey),
+                    ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.mic_none_rounded, color: Colors.deepOrange.shade600, size: 20),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.person_rounded, size: 18, color: AppColors.primary),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
-            // Category Chips
+            // Quick Filter Switch Row (Image 3 Style: Veg, Non-Veg, EatRight, 4.0+)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _vegTogglePill(),
+                  const SizedBox(width: 8),
+                  _nonVegTogglePill(),
+                  const SizedBox(width: 8),
+                  _eatRightPill(),
+                  const SizedBox(width: 8),
+                  _ratingFilterPill(),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Category Horizontal Chips
             SizedBox(
-              height: 44,
+              height: 38,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _canteenCategories.length,
                 itemBuilder: (context, index) {
                   final cat = _canteenCategories[index];
-                  return CategoryChip(
-                    title: cat,
-                    selected: _selectedCategory == cat,
-                    onTap: () {
-                      setState(() {
-                        _selectedCategory = cat;
-                      });
-                    },
+                  final isSelected = _selectedCategory == cat;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedCategory = cat;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.textPrimary : Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected ? AppColors.textPrimary : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
                   );
                 },
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Veg / Non-Veg Diet Filter
+            // Menu Section Header (Image 3: "Recommended (20) ⌵")
             Row(
-              children: [
-                _dietFilterChip("All", Icons.restaurant),
-                const SizedBox(width: 8),
-                _dietFilterChip("Veg", Icons.eco, color: AppColors.veg),
-                const SizedBox(width: 8),
-                _dietFilterChip("Non-Veg", Icons.kebab_dining, color: AppColors.nonVeg),
-              ],
-            ),
-
-            const SizedBox(height: 22),
-
-            // Menu Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Menu Items (${_filteredFoods.length})",
+                  "Recommended (${_filteredFoods.length})",
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Text(
-                  "Skip the line, pre-order",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                const SizedBox(width: 4),
+                const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: AppColors.textPrimary),
+                const Spacer(),
+                // Toggle Grid / List
+                IconButton(
+                  tooltip: _isGridView ? "Switch to List View" : "Switch to Grid View",
+                  icon: Icon(
+                    _isGridView ? Icons.view_agenda_outlined : Icons.grid_view_rounded,
+                    size: 20,
+                    color: Colors.grey.shade700,
                   ),
+                  onPressed: () {
+                    setState(() {
+                      _isGridView = !_isGridView;
+                    });
+                  },
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Foods List
+            // Foods Content (2-Column Grid from Image 3 or List)
             if (_filteredFoods.isEmpty)
               Center(
                 child: Padding(
@@ -360,12 +452,43 @@ class _CanteenMenuState extends State<CanteenMenu> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Try searching for another dish or category",
+                        "Try clearing diet filters or search query",
                         style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
                       ),
                     ],
                   ),
                 ),
+              )
+            else if (_isGridView)
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _filteredFoods.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.65,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 14,
+                ),
+                itemBuilder: (context, index) {
+                  final food = _filteredFoods[index];
+                  final isFav = _service.isFavourite(food.id);
+                  final qty = _service.getFoodQuantity(food.id);
+
+                  return FoodGridCard(
+                    food: food,
+                    isFavourite: isFav,
+                    cartQuantity: qty,
+                    onFavourite: () => _service.toggleFavourite(food.id),
+                    onAdd: () {
+                      _service.addToCart(food);
+                      _showAddedSnackbar(food);
+                    },
+                    onRemove: () {
+                      _service.updateQuantity(food.id, -1);
+                    },
+                  );
+                },
               )
             else
               ListView.builder(
@@ -384,20 +507,7 @@ class _CanteenMenuState extends State<CanteenMenu> {
                     onFavourite: () => _service.toggleFavourite(food.id),
                     onAdd: () {
                       _service.addToCart(food);
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('${food.name} added to cart!'),
-                          backgroundColor: AppColors.primary,
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(milliseconds: 1400),
-                          action: SnackBarAction(
-                            label: 'VIEW CART',
-                            textColor: Colors.white,
-                            onPressed: _openCart,
-                          ),
-                        ),
-                      );
+                      _showAddedSnackbar(food);
                     },
                     onRemove: () {
                       _service.updateQuantity(food.id, -1);
@@ -481,39 +591,191 @@ class _CanteenMenuState extends State<CanteenMenu> {
     );
   }
 
-  Widget _dietFilterChip(String label, IconData icon, {Color? color}) {
-    final isSelected = _selectedDiet == label;
+  void _showAddedSnackbar(Food food) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${food.name} added to cart!'),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(milliseconds: 1400),
+        action: SnackBarAction(
+          label: 'VIEW CART',
+          textColor: Colors.white,
+          onPressed: _openCart,
+        ),
+      ),
+    );
+  }
+
+  Widget _vegTogglePill() {
+    final isVegActive = _selectedDiet == "Veg";
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedDiet = label;
+          _selectedDiet = isVegActive ? "All" : "Veg";
         });
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.textPrimary : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: isVegActive ? Colors.green.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColors.textPrimary : Colors.grey.shade300,
+            color: isVegActive ? const Color(0xFF16A34A) : Colors.grey.shade300,
+            width: isVegActive ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFF16A34A), width: 1.5),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: const Center(
+                child: CircleAvatar(backgroundColor: Color(0xFF16A34A), radius: 3),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              "Veg",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              isVegActive ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
+              color: isVegActive ? const Color(0xFF16A34A) : Colors.grey.shade400,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _nonVegTogglePill() {
+    final isNonVegActive = _selectedDiet == "Non-Veg";
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedDiet = isNonVegActive ? "All" : "Non-Veg";
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isNonVegActive ? Colors.red.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isNonVegActive ? const Color(0xFFD32F2F) : Colors.grey.shade300,
+            width: isNonVegActive ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: const Color(0xFFD32F2F), width: 1.5),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: const Center(
+                child: Icon(Icons.arrow_drop_up_rounded, color: Color(0xFFD32F2F), size: 14),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              "Non-Veg",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              isNonVegActive ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
+              color: isNonVegActive ? const Color(0xFFD32F2F) : Colors.grey.shade400,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _eatRightPill() {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _eatRightOnly = !_eatRightOnly;
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: _eatRightOnly ? Colors.pink.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _eatRightOnly ? Colors.pink.shade300 : Colors.grey.shade300,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icon,
+              _eatRightOnly ? Icons.favorite_rounded : Icons.favorite_border_rounded,
               size: 14,
-              color: isSelected ? Colors.white : (color ?? Colors.grey.shade700),
+              color: _eatRightOnly ? Colors.pink : Colors.grey.shade700,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
             Text(
-              label,
+              "EatRight",
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
+                color: _eatRightOnly ? Colors.pink.shade900 : AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _ratingFilterPill() {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _ratingFourPlus = !_ratingFourPlus;
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: _ratingFourPlus ? Colors.amber.shade50 : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _ratingFourPlus ? Colors.amber.shade400 : Colors.grey.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Ratings 4.0+",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _ratingFourPlus ? Colors.amber.shade900 : AppColors.textPrimary,
               ),
             ),
           ],
