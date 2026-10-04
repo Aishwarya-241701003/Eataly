@@ -6,6 +6,8 @@ import '../utils/constants.dart';
 class FoodCard extends StatelessWidget {
   final Food food;
   final VoidCallback onAdd;
+  final VoidCallback? onRemove;
+  final int cartQuantity;
   final VoidCallback? onTap;
   final VoidCallback? onFavourite;
   final bool isFavourite;
@@ -14,6 +16,8 @@ class FoodCard extends StatelessWidget {
     super.key,
     required this.food,
     required this.onAdd,
+    this.onRemove,
+    this.cartQuantity = 0,
     this.onTap,
     this.onFavourite,
     this.isFavourite = false,
@@ -235,23 +239,10 @@ class FoodCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       if (food.available)
-                        ElevatedButton.icon(
-                          onPressed: onAdd,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                AppColors.primary,
-                            foregroundColor:
-                                Colors.white,
-                            shape:
-                                RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(
-                                      16),
-                            ),
-                          ),
-                          icon: const Icon(Icons.add),
-                          label:
-                              const Text("Add"),
+                        _InteractiveAddStepper(
+                          count: cartQuantity,
+                          onAdd: onAdd,
+                          onRemove: onRemove,
                         )
                       else
                         Container(
@@ -278,6 +269,142 @@ class FoodCard extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InteractiveAddStepper extends StatefulWidget {
+  final int count;
+  final VoidCallback onAdd;
+  final VoidCallback? onRemove;
+
+  const _InteractiveAddStepper({
+    required this.count,
+    required this.onAdd,
+    this.onRemove,
+  });
+
+  @override
+  State<_InteractiveAddStepper> createState() => _InteractiveAddStepperState();
+}
+
+class _InteractiveAddStepperState extends State<_InteractiveAddStepper>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+      lowerBound: 0.88,
+      upperBound: 1.0,
+    )..value = 1.0;
+    _scaleAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _triggerBounce(VoidCallback action) async {
+    await _animController.reverse();
+    action();
+    if (mounted) {
+      await _animController.forward();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.count == 0) {
+      return ScaleTransition(
+        scale: _scaleAnimation,
+        child: ElevatedButton.icon(
+          onPressed: () => _triggerBounce(widget.onAdd),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text(
+            "Add",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+        ),
+      );
+    }
+
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onRemove != null
+                    ? () => _triggerBounce(widget.onRemove!)
+                    : null,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Icon(Icons.remove, size: 16, color: Colors.white),
+                ),
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Text(
+                '${widget.count}',
+                key: ValueKey<int>(widget.count),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _triggerBounce(widget.onAdd),
+                borderRadius: const BorderRadius.horizontal(right: Radius.circular(18)),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Icon(Icons.add, size: 16, color: Colors.white),
+                ),
               ),
             ),
           ],

@@ -31,4 +31,33 @@ class Order {
       (sum, item) => sum + item.totalPrice,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'orderId': orderId,
+      'items': items.map((i) => i.toMap()).toList(),
+      'pickupSlot': pickupSlot,
+      'tokenNumber': tokenNumber,
+      'orderTime': orderTime.toIso8601String(),
+      'status': status.name,
+    };
+  }
+
+  factory Order.fromMap(Map<String, dynamic> map) {
+    return Order(
+      orderId: map['orderId'] ?? '',
+      items: (map['items'] as List<dynamic>? ?? [])
+          .map((i) => CartItem.fromMap(Map<String, dynamic>.from(i)))
+          .toList(),
+      pickupSlot: map['pickupSlot'] ?? '',
+      tokenNumber: map['tokenNumber'] ?? '',
+      orderTime: map['orderTime'] != null
+          ? DateTime.tryParse(map['orderTime']) ?? DateTime.now()
+          : DateTime.now(),
+      status: OrderStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => OrderStatus.pending,
+      ),
+    );
+  }
 }

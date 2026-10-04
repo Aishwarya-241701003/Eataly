@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
+import 'canteen_heatmap_screen.dart';
 import 'canteen_menu.dart';
 import 'cart_screen.dart';
 import 'orders_screen.dart';
@@ -44,6 +45,15 @@ class _StudentHomeState extends State<StudentHome> {
       context,
       MaterialPageRoute(
         builder: (context) => CanteenMenu(canteenName: canteenName),
+      ),
+    );
+  }
+
+  void _openHeatmap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CanteenHeatmapScreen(),
       ),
     );
   }
@@ -100,13 +110,17 @@ class _StudentHomeState extends State<StudentHome> {
           _buildHeader(),
           const SizedBox(height: 24),
           _buildSearchBar(),
+          _buildHighDemandAlertBanner(),
           const SizedBox(height: 26),
           _buildOfferBanner(),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
+          _buildCrowdHeatmapBanner(),
+          const SizedBox(height: 28),
           _sectionTitle(
             'Choose your canteen',
             'Skip the line • Live queue wait times',
-            onSeeAll: () => _openCanteen("Rec Cafe"),
+            actionLabel: 'Crowd Map',
+            onSeeAll: _openHeatmap,
           ),
           const SizedBox(height: 16),
           _buildCanteens(),
@@ -328,6 +342,103 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
+  // LIVE HIGH DEMAND ALERT BANNER (FROM ADMIN)
+  // ------------------------------------------------------------
+
+  Widget _buildHighDemandAlertBanner() {
+    if (!_service.isHighDemandActive) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.danger.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.danger.withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.danger.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.campaign_rounded,
+                  color: AppColors.danger, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Text(
+                        'CAMPUS RUSH SURGE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        '• LIVE NOTICE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _service.highDemandAlert,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: _openHeatmap,
+                    child: const Text(
+                      'Check Less Crowded Canteens on Live Heatmap →',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------
   // OFFER BANNER
   // ------------------------------------------------------------
 
@@ -439,10 +550,128 @@ class _StudentHomeState extends State<StudentHome> {
   }
 
   // ------------------------------------------------------------
+  // LIVE CROWD HEATMAP BANNER
+  // ------------------------------------------------------------
+
+  Widget _buildCrowdHeatmapBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: GestureDetector(
+        onTap: _openHeatmap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF2A1410), Color(0xFF1E0E0A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: red.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: red.withValues(alpha: 0.45), width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.map_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: AppColors.queueLow,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'LIVE CROWD HEATMAP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: AppColors.queueLow,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Live Canteen Crowd Levels',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Find least crowded canteens before you order',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.white.withValues(alpha: 0.78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: red,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'View',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 3),
+                    Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 10),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------
   // SECTION TITLE
   // ------------------------------------------------------------
 
-  Widget _sectionTitle(String title, String subtitle, {VoidCallback? onSeeAll}) {
+  Widget _sectionTitle(String title, String subtitle, {String actionLabel = 'See all', VoidCallback? onSeeAll}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Row(
@@ -475,13 +704,21 @@ class _StudentHomeState extends State<StudentHome> {
           if (onSeeAll != null)
             GestureDetector(
               onTap: onSeeAll,
-              child: Text(
-                'See all',
-                style: TextStyle(
-                  color: red,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    actionLabel,
+                    style: TextStyle(
+                      color: red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (actionLabel != 'See all') ...[
+                    const SizedBox(width: 3),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 10, color: red),
+                  ],
+                ],
               ),
             ),
         ],
@@ -502,8 +739,80 @@ class _StudentHomeState extends State<StudentHome> {
         padding: const EdgeInsets.symmetric(horizontal: 22),
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: canteens.length,
+        itemCount: canteens.length + 1,
         itemBuilder: (context, index) {
+          if (index == canteens.length) {
+            return GestureDetector(
+              onTap: _openHeatmap,
+              child: Container(
+                width: 135,
+                margin: const EdgeInsets.only(right: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [red, AppColors.offerGradient2],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: red.withValues(alpha: 0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.map_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Live Crowd\nHeatmap',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'View All',
+                          style: TextStyle(
+                            color: red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
           final canteen = canteens[index];
           final queueStatus = canteen['queueStatus'] as String? ?? 'Low';
           final queueWait = canteen['queueWait'] as String? ?? '5 mins';
@@ -639,6 +948,7 @@ class _StudentHomeState extends State<StudentHome> {
         itemCount: featuredFoods.length,
         itemBuilder: (context, index) {
           final food = featuredFoods[index];
+          final qty = _service.getFoodQuantity(food.id);
 
           return Container(
             width: 220,
@@ -717,8 +1027,10 @@ class _StudentHomeState extends State<StudentHome> {
                     Positioned(
                       right: 12,
                       bottom: -18,
-                      child: GestureDetector(
-                        onTap: () {
+                      child: _InteractiveFoodAddButton(
+                        count: qty,
+                        size: 42,
+                        onAdd: () {
                           _service.addToCart(food);
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -726,6 +1038,7 @@ class _StudentHomeState extends State<StudentHome> {
                               content: Text('${food.name} added to cart!'),
                               backgroundColor: red,
                               behavior: SnackBarBehavior.floating,
+                              duration: const Duration(milliseconds: 1400),
                               action: SnackBarAction(
                                 label: 'VIEW CART',
                                 textColor: Colors.white,
@@ -734,26 +1047,9 @@ class _StudentHomeState extends State<StudentHome> {
                             ),
                           );
                         },
-                        child: Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: red,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: red.withOpacity(0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
+                        onRemove: () {
+                          _service.updateQuantity(food.id, -1);
+                        },
                       ),
                     ),
                   ],
@@ -827,6 +1123,7 @@ class _StudentHomeState extends State<StudentHome> {
       (f) => f.name.contains("Roll") || f.name.contains("Burger"),
       orElse: () => _service.foods.first,
     );
+    final favQty = _service.getFoodQuantity(favFood.id);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -896,8 +1193,10 @@ class _StudentHomeState extends State<StudentHome> {
                           ),
                         ),
                         const Spacer(),
-                        GestureDetector(
-                          onTap: () {
+                        _InteractiveFoodAddButton(
+                          count: favQty,
+                          size: 36,
+                          onAdd: () {
                             _service.addToCart(favFood);
                             ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -905,6 +1204,7 @@ class _StudentHomeState extends State<StudentHome> {
                                 content: Text('${favFood.name} added to cart!'),
                                 backgroundColor: red,
                                 behavior: SnackBarBehavior.floating,
+                                duration: const Duration(milliseconds: 1400),
                                 action: SnackBarAction(
                                   label: 'VIEW CART',
                                   textColor: Colors.white,
@@ -913,19 +1213,9 @@ class _StudentHomeState extends State<StudentHome> {
                               ),
                             );
                           },
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
+                          onRemove: () {
+                            _service.updateQuantity(favFood.id, -1);
+                          },
                         ),
                       ],
                     ),
@@ -1028,6 +1318,156 @@ class _StudentHomeState extends State<StudentHome> {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InteractiveFoodAddButton extends StatefulWidget {
+  final int count;
+  final VoidCallback onAdd;
+  final VoidCallback? onRemove;
+  final double size;
+
+  const _InteractiveFoodAddButton({
+    required this.count,
+    required this.onAdd,
+    this.onRemove,
+    this.size = 42,
+  });
+
+  @override
+  State<_InteractiveFoodAddButton> createState() => _InteractiveFoodAddButtonState();
+}
+
+class _InteractiveFoodAddButtonState extends State<_InteractiveFoodAddButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+      lowerBound: 0.85,
+      upperBound: 1.0,
+    )..value = 1.0;
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _tapBounce(VoidCallback action) async {
+    await _controller.reverse();
+    action();
+    if (mounted) {
+      await _controller.forward();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const red = AppColors.primary;
+
+    if (widget.count > 0) {
+      // Expanded stepper pill showing count and - / +
+      return ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: widget.size,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: red,
+            borderRadius: BorderRadius.circular(widget.size / 2),
+            boxShadow: [
+              BoxShadow(
+                color: red.withOpacity(0.4),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GestureDetector(
+                onTap: widget.onRemove != null
+                    ? () => _tapBounce(widget.onRemove!)
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Icon(
+                    Icons.remove_rounded,
+                    color: Colors.white,
+                    size: widget.size * 0.45,
+                  ),
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                transitionBuilder: (child, anim) =>
+                    ScaleTransition(scale: anim, child: child),
+                child: Text(
+                  '${widget.count}',
+                  key: ValueKey<int>(widget.count),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: widget.size * 0.36,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _tapBounce(widget.onAdd),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: widget.size * 0.45,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Default + circle button with click bounce & micro-interactions
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: () => _tapBounce(widget.onAdd),
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            color: red,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: red.withOpacity(0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.add_rounded,
+            color: Colors.white,
+            size: widget.size * 0.58,
+          ),
         ),
       ),
     );
