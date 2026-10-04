@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "102938475610",
+    "project_id": "eataly-aishlat-2322",
+    "storage_bucket": "eataly-aishlat-2322.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102938475610:android:a1b2c3d4e5f60718293a4b",
+        "android_client_info": {
+          "package_name": "com.example.eataly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxexhNbvBzwllJiiMqPvdsWXh3zOzJ-yI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

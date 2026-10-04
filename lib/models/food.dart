@@ -11,6 +11,7 @@ class Food {
   final bool isPopular;
   final bool isNew;
   final int preparationTime; // in minutes
+  final String? canteen;
 
   Food({
     required this.id,
@@ -25,6 +26,7 @@ class Food {
     required this.isPopular,
     required this.isNew,
     required this.preparationTime,
+    this.canteen,
   });
 
   factory Food.fromMap(Map<String, dynamic> map) {
@@ -41,6 +43,7 @@ class Food {
       isPopular: map['isPopular'],
       isNew: map['isNew'],
       preparationTime: map['preparationTime'],
+      canteen: map['canteen'],
     );
   }
 
@@ -58,6 +61,8 @@ class Food {
       'isPopular': isPopular,
       'isNew': isNew,
       'preparationTime': preparationTime,
+      if (canteen != null) 'canteen': canteen,
     };
   }
 }
+

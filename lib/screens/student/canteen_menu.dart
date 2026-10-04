@@ -55,10 +55,36 @@ class _CanteenMenuState extends State<CanteenMenu> {
     }
   }
 
+  bool _isFoodFromThisCanteen(Food food) {
+    final target = widget.canteenName.trim().toLowerCase();
+    final foodCanteen = (food.canteen ?? '').trim().toLowerCase();
+    if (foodCanteen.isEmpty) return true;
+    if (target.isEmpty) return true;
+    if (foodCanteen == target) return true;
+    if (target.contains(foodCanteen) || foodCanteen.contains(target)) return true;
+    if (target.contains('6') && foodCanteen.contains('6')) return true;
+    if (target.contains('ccd') && foodCanteen.contains('coffee')) return true;
+    return false;
+  }
+
+  List<String> get _canteenCategories {
+    final Set<String> cats = {'All'};
+    for (final f in _service.foods) {
+      if (_isFoodFromThisCanteen(f) && f.category.isNotEmpty) {
+        cats.add(f.category);
+      }
+    }
+    return cats.toList();
+  }
+
   List<Food> get _filteredFoods {
     return _service.foods.where((food) {
-      final matchesSearch = food.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          food.description.toLowerCase().contains(_searchQuery.toLowerCase());
+      if (!_isFoodFromThisCanteen(food)) return false;
+
+      final query = _searchQuery.trim().toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          food.name.toLowerCase().contains(query) ||
+          food.description.toLowerCase().contains(query);
       final matchesCategory = _selectedCategory == "All" || food.category == _selectedCategory;
       final matchesDiet = _selectedDiet == "All" ||
           (_selectedDiet == "Veg" && food.isVeg) ||
@@ -264,9 +290,9 @@ class _CanteenMenuState extends State<CanteenMenu> {
               height: 44,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: AppConstants.categories.length,
+                itemCount: _canteenCategories.length,
                 itemBuilder: (context, index) {
-                  final cat = AppConstants.categories[index];
+                  final cat = _canteenCategories[index];
                   return CategoryChip(
                     title: cat,
                     selected: _selectedCategory == cat,
@@ -349,10 +375,12 @@ class _CanteenMenuState extends State<CanteenMenu> {
                 itemBuilder: (context, index) {
                   final food = _filteredFoods[index];
                   final isFav = _service.isFavourite(food.id);
+                  final qty = _service.getFoodQuantity(food.id);
 
                   return FoodCard(
                     food: food,
                     isFavourite: isFav,
+                    cartQuantity: qty,
                     onFavourite: () => _service.toggleFavourite(food.id),
                     onAdd: () {
                       _service.addToCart(food);
@@ -362,6 +390,7 @@ class _CanteenMenuState extends State<CanteenMenu> {
                           content: Text('${food.name} added to cart!'),
                           backgroundColor: AppColors.primary,
                           behavior: SnackBarBehavior.floating,
+                          duration: const Duration(milliseconds: 1400),
                           action: SnackBarAction(
                             label: 'VIEW CART',
                             textColor: Colors.white,
@@ -369,6 +398,9 @@ class _CanteenMenuState extends State<CanteenMenu> {
                           ),
                         ),
                       );
+                    },
+                    onRemove: () {
+                      _service.updateQuantity(food.id, -1);
                     },
                   );
                 },

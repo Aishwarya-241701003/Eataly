@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/colors.dart';
 import '../../utils/constants.dart';
+import '../auth/role_selection_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -286,11 +288,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // Preferences
             _sectionHeader("Preferences"),
             const SizedBox(height: 10),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-              ),
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
               child: Column(
                 children: [
                   SwitchListTile(
@@ -323,34 +323,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
+
+
             const SizedBox(height: 24),
 
-            // College & Project Info
-            _sectionHeader("Design Thinking Project Details"),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+            // Sync / Seed Firestore Data
+            ElevatedButton.icon(
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Syncing menu & canteens to Cloud Firestore..."),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                await FirestoreService().seedInitialData(force: true);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Firestore synchronized successfully!"),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
+              label: const Text(
+                "Sync Menu to Cloud Firestore",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _infoRow("Course", "GE23627 Design Thinking & Innovation"),
-                  const Divider(),
-                  _infoRow("Domain", "In-Campus Food Ordering System"),
-                  const Divider(),
-                  _infoRow("Faculty Incharge", "Dr. P. Revathy"),
-                  const Divider(),
-                  _infoRow("Team Members", "1. Aishwarya B [241701003]\n2. Latha A [241701024]"),
-                  const Divider(),
-                  _infoRow("College", "Rajalakshmi Engineering College (REC)"),
-                ],
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // Logout / Switch
             OutlinedButton.icon(
@@ -360,6 +369,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     content: Text("Logged out successfully."),
                     behavior: SnackBarBehavior.floating,
                   ),
+                );
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+                  (route) => false,
                 );
               },
               icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
@@ -409,27 +422,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
